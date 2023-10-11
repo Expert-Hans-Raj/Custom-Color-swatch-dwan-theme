@@ -1,0 +1,262 @@
+Custom Color Swatch On Collection page:-
+
+ 1. Go To Shopify Theme and Find "Card-Product" snippets and then copy below code and add where you want to show custom swatch.
+ <!-- start Custom-Swatch -->
+ <div class="custom_variant">
+  <div class="div_flex">
+  <div class="custom_colors">
+  {% for option in card_product.options_with_values %}
+  {% assign downcased_option = option.name | downcase %}
+  {% if downcased_option contains 'color' %}
+    {% assign is_color = true %}
+    {% for value in option.values %}
+      {% assign variant_available = false %}
+      {% assign variant_image = nil %}
+      {% for variant in card_product.variants %}
+        {% if variant.option1 == value or variant.option2 == value or variant.option3 == value %}
+          {% assign variant_image = variant.featured_media.src %}
+          {% unless variant.available %}
+            {% assign variant_available = false %}
+          {% else %}
+            {% assign variant_available = true %}
+            {% break %}
+          {% endunless %}
+        {% endif %}
+      {% endfor %}
+   {%- assign newval = value | handle -%}
+      <span class="custom_color_var custom_swatch {% unless variant_available %}soldout{% endunless %}">
+      <input class="ColorSwatch__Radio" type="radio" name="{{ option.name }}" value="{{ value | escape }}" {% if option.selected_value == value %}checked{% endif %} class="{% if variant.available %} available {% else %} unavailable {% endif %}" data-image-url="{% if variant_image != blank %}https://www.lu-ciee.com/cdn/shop/{{ variant_image }}{% endif %}">
+      <label class="color-swatch" data-option="{{ value }}" style="background-color: {{ newval | split: ' ' | last | handle }};">
+       </label>
+       </span>
+    {% endfor %}
+    {% endif %}
+{% endfor %}
+  </div>
+<div class="custom_size">
+   {% for option in card_product.options_with_values %}
+  {% assign downcased_option = option.name | downcase %}
+  {% if downcased_option contains 'size' %}
+    {% assign is_size = true %}
+    {% for value in option.values %}
+      {% assign variant_available = true %}
+      {% if card_product.options.size >= 1 %}
+        {% unless card_product.variants[forloop.index0].available  %}
+          {% assign variant_available = false %}
+        {% endunless %}
+      {% endif %}
+      <span class="custom_swatch {% unless variant_available %}soldout{% endunless %}">
+      <input class="SizeSwatch__Radio" type="radio" name="{{ option.name }}" value="{{ value | escape }}" {% if option.selected_value == value %}checked{% endif %} class="{% if variant.available %} available {% else %} unavailable {% endif %}" >
+      <label class="size-swatch" data-option="{{ value }}">
+      {{ value | escape }}
+       </label>
+       </span>
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+</div>
+  <div class="custom_size finishing" style="display:none;">
+   {% for option in card_product.options_with_values %}
+  {% assign downcased_option = option.name | downcase %}
+  {% if downcased_option contains 'hem finishing' %}
+    {% assign is_finishing = true %}
+    {% for value in option.values %}
+      {% assign variant_available = true %}
+      {% if card_product.options.size >= 1 %}
+        {% unless card_product.variants[forloop.index0].available  %}
+          {% assign variant_available = false %}
+        {% endunless %}
+      {% endif %}
+      <span class="custom_swatch {% unless variant_available %}soldout{% endunless %}">
+      <input class="finishingSwatch__Radio" type="radio" name="{{ option.name | replace:' ',"" | downcase }}" value="{{ value | escape }}" {% if option.selected_value == value %}checked{% endif %} class="{% if variant.available %} available {% else %} unavailable {% endif %}" >
+      <label class="size-swatch" data-option="{{ value }}">
+      {{ value | escape }}
+       </label>
+       </span>
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+  </div>
+</div>
+  <div class="var_combo">
+<select class="varts_list" style="display:none;">
+  {% for variant in card_product.variants %}
+  <option data_var="{{ variant.title }}" pro_id="{{ variant.id }}">{{ variant.title }}</option>
+    {% endfor %}
+</select>
+ <button class="custom_add_cart" data_pro_id="">Add To Cart</button>
+  </div>
+  <!-- end Custom-Swatch -->
+ 2. Go Shopify edit theme and add below code on custom.js file and include custom.js file to theme.liqued file.
+<script>
+  $(document).ready(function() {
+    $(".ColorSwatch__Radio").click(function() {
+        var main_data_image = $(this).attr("data-image-url");
+        $(this).parents(".grid__item").find(".ProductItem__Image").attr("srcset", main_data_image);
+    });
+$('.grid__item').each(function() {
+    var $container = $(this);
+    $container.find('.custom_variant .ColorSwatch__Radio, .custom_variant .SizeSwatch__Radio').on('change', function() {
+        var option1 = $container.find('input[name="Size"]:checked').val();
+        var option2 = $container.find('input[name="Color"]:checked').val();
+        var option3 =     $container.find('input[name="hemfinishing"]').first().prop('checked', true).val();
+        // Set finaloption based on whether option2 and option3 exist or not
+        var finaloption = option1;
+        if (option2) {
+            finaloption += " / " + option2;
+        }
+        if (option3) {
+            finaloption += " / " + option3;
+        }
+        var $selectedOption = $container.find('.varts_list option').filter(function() {
+            return $(this).text() === finaloption;
+        });
+        if ($selectedOption.length > 0) {
+            $container.find('.varts_list option').prop('selected', false);
+            $selectedOption.prop('selected', true);
+            var variant__id = $selectedOption.attr('pro_id');
+            $container.find('.custom_add_cart').attr('pro_id', variant__id);
+           }
+    });
+});
+$('.cst_mmm option').removeAttr('selected')
+    $('.cst_mmm option').filter(function() {
+     return $(this).text() === finalop;
+    }).attr('selected', true);
+    $(document).on("click", ".custom_add_cart", function() {
+        var Variant_id = $(this).attr('pro_id');
+        items = {
+            id: Variant_id,
+            quantity: 1
+        };
+        $.ajax({
+            method: "POST",
+            dataType: "json",
+            url: "/cart/add.js",
+            async: false,
+            data: items,
+            success: function(response) {
+              window.location.href = "/cart";
+            }
+        });
+    });
+});
+
+  </script>
+
+3. Copy Below css and add to css file.
+
+<style>
+  .custom_color_var {
+    position: relative;
+}
+.custom_color_var label {
+    border: var(--variant-pills-border-width) solid rgba(var(--color-foreground),var(--variant-pills-border-opacity));
+    background-color: rgb(var(--color-background));
+    color: rgba(var(--color-foreground));
+    border-radius: var(--variant-pills-radius);
+    color: rgb(var(--color-foreground));
+    display: inline-block;
+    margin: 0.7rem 0.5rem 0.2rem 0;
+    padding: 3px 12px;
+    font-size: 13px;
+    letter-spacing: 0;
+    line-height: 1.5;
+    text-align: center;
+    transition: border var(--duration-short) ease;
+    cursor: pointer;
+    position: relative;
+}
+.custom_color_var input[type="radio"] {
+    position: absolute;
+    z-index: 1111;
+    opacity: 0;
+    height: 23px;
+    width: 23px;
+    margin: 0.7rem 0.5rem 0.2rem 0;
+    padding: 6px!important;
+}
+.custom_color_var input[type=radio]:checked+label {
+    border-color: rgb(var(--color-foreground));
+    color: var(--color-base-accent-1);
+    font-weight: 700;
+}
+.card_prs:hover .card__content .custom_variant {
+    transform: translateY(-30%);
+    transition: transform .3s ease-out 0s;
+    opacity: 1;
+}
+.custom_variant {
+    opacity: 0;
+    background-color: #ffffffe6;
+    transform: translateY(0);
+    transition: transform .3s ease-out 0s;
+    position: absolute!important;
+    width: 100%;
+    z-index: 999;
+    left: 0;
+    padding: 25px 20px;
+    top: -93px;
+}
+input.SizeSwatch__Radio {
+    position: absolute;
+    height: 0;
+    width: 0;
+    opacity: 1 !important;
+}
+span.custom_swatch input[type=radio] {
+    width: 17px!important;
+    height: 17px!important;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 50%;
+    opacity: 1!important;
+    cursor: pointer;
+}
+button.custom_add_cart {
+    border: 1px solid #000;
+    background-color: #fff;
+    color: #000!important;
+    padding: 11px 12px;
+    cursor: pointer;
+    line-height: initial;
+    width: 60%;
+    box-sizing: border-box;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0px;
+    margin: 0 auto;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    box-shadow: none;
+}
+.div_flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.custom_colors {
+    width: 30%;
+}
+.custom_size {
+    width: 70%;
+    text-align: left;
+    margin: auto;
+    padding-left: 80px;
+}
+@media only screen and (max-width: 768px){
+  .custom_variant {
+    display: none;
+}
+.card_prs .card .media {
+   height: 267px;
+}
+}
+  </style>
+
+Source Code For dwan Theme.
+Preview url:- https://www.lu-ciee.com/?_ab=0&_fd=0&_sc=1&preview_theme_id=153960579406
